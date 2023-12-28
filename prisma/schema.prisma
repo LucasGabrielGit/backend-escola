@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model PessoaFisica {
+  id                Int         @id @unique @default(autoincrement())
+  nome              String
+  data_nascimento   DateTime
+  genero            String
+  email             String
+  endereco          String
+  num_telefone      String
+  num_identificacao String
+  nacionalidade     String
+  observacoes       String
+  Aluno             Aluno[]
+  Professor         Professor[]
+}
+
+model Aluno {
+  id             Int          @id @unique @default(autoincrement())
+  pessoaFisicaId Int
+  pessoa_fisica  PessoaFisica @relation(fields: [pessoaFisicaId], references: [id])
+  Matricula      Matricula[]
+}
+
+model Professor {
+  id                  Int          @id @unique @default(autoincrement())
+  pessoaFisicaId      Int
+  pessoaFisica        PessoaFisica @relation(fields: [pessoaFisicaId], references: [id])
+  disciplinaId        Int
+  disciplina          Disciplina   @relation(fields: [disciplinaId], references: [id])
+  titulacao           String
+  area_especializacao String
+  observacoes         String
+}
+
+model Turma {
+  id          Int         @id @unique @default(autoincrement())
+  ano         Int
+  periodo     String
+  capacidade  Int
+  turno       String
+  observacoes String
+  Matricula   Matricula[]
+}
+
+model Matricula {
+  id Int @id @unique @default(autoincrement())
+
+  alunoId Int
+  aluno   Aluno @relation(fields: [alunoId], references: [id])
+  turmaId Int
+  turma   Turma @relation(fields: [turmaId], references: [id])
+
+  data_matricula DateTime
+  notas          Decimal
+  status         Int
+  observacoes    String
+}
+
+model Disciplina {
+  id            Int    @id @unique @default(autoincrement())
+  nome          String
+  descricao     String
+  carga_horaria String
+  nivel         String
+  observacoes   String
+
+  professor Professor[]
+}
