@@ -1,40 +1,40 @@
-import type { Aluno, Matricula, Nota, Professor } from '@prisma/client';
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { prisma } from '../../client/prisma';
+import type { Matricula, Nota } from '@prisma/client'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import { prisma } from '../../client/prisma'
 
 export class MatriculaController {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
       const { matricula } = req.body as {
         matricula: Matricula;
-      };
+      }
 
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
-          id: matricula.alunoId,
-        },
-      });
+          id: matricula.alunoId
+        }
+      })
 
       const turmaExistente = await prisma.turma.findFirst({
         where: {
-          id: matricula.turmaId,
-        },
-      });
+          id: matricula.turmaId
+        }
+      })
 
       if (!alunoExistente) {
-        return res.status(404).send({ error: 'Aluno não encontrado' });
+        return res.status(404).send({ error: 'Aluno não encontrado' })
       }
 
       const matriculaExistente = await prisma.matricula.findFirst({
         where: {
-          alunoId: matricula.alunoId,
-        },
-      });
+          alunoId: matricula.alunoId
+        }
+      })
 
       if (matriculaExistente) {
         return res.status(400).send({
-          error: `O aluno já está vinculado à turma: ${turmaExistente?.periodo}`,
-        });
+          error: `O aluno já está vinculado à turma: ${turmaExistente?.periodo}`
+        })
       }
 
       const newMatricula = await prisma.matricula.create({
@@ -45,26 +45,28 @@ export class MatriculaController {
           numeroMatricula: String(Math.floor(Math.random() * 10000)),
           aluno: {
             connect: {
-              id: alunoExistente?.id,
-            },
+              id: alunoExistente?.id
+            }
           },
           statusMatricula: {
             create: {
-              descricao: matricula.status === 0 ? 'Ativa' : 'Inativa',
-            },
+              descricao: matricula.status === 0 ? 'Ativa' : 'Inativa'
+            }
           },
           turma: {
             connect: {
-              id: matricula.turmaId,
-            },
-          },
-        },
-      });
+              id: matricula.turmaId
+            }
+          }
+        }
+      })
 
       console.log({
-        newMatricula,
-      });
-    } catch (error) {}
+        newMatricula
+      })
+    } catch (error) {
+      return res.status(500).send({ error: error })
+    }
   }
 
   async listar(req: FastifyRequest, res: FastifyReply) {
@@ -73,64 +75,64 @@ export class MatriculaController {
         include: {
           aluno: true,
           turma: true,
-          notas: true,
-        },
-      });
+          notas: true
+        }
+      })
 
-      return { matriculas };
-    } catch (error: any) {
-      return res.status(500).send({ message: error.message });
+      return { matriculas }
+    } catch (error) {
+      return res.status(500).send({ message: error })
     }
   }
 
-  async salvarNotas(req: FastifyRequest, res: FastifyReply) {
+  async salvarNotas(req: FastifyRequest, res: FastifyReply): Promise<void> {
     try {
       const { notas, matriculaId } = req.body as {
         notas: Nota;
         matriculaId: number;
-      };
+      }
 
       const matriculaExistente = await prisma.matricula.findFirst({
         where: {
-          id: matriculaId,
+          id: matriculaId
         },
         include: {
           aluno: {
             select: {
-              pessoaFisica: true,
-            },
-          },
-        },
-      });
+              pessoaFisica: true
+            }
+          }
+        }
+      })
 
-      if (!matriculaExistente) {
-        return res.status(404).send({ error: 'Matricula não encontrada' });
+      if (matriculaExistente === null) {
+        return res.status(404).send({ error: 'Matricula não encontrada' })
       }
 
       const notasExistentes = await prisma.nota.findFirst({
         where: {
-          matriculaId,
-        },
-      });
+          matriculaId
+        }
+      })
 
-      if (notasExistentes) {
+      if (notasExistentes !== null) {
         await prisma.nota
           .update({
             where: {
-              id: notasExistentes?.id,
+              id: notasExistentes?.id
             },
             data: {
               nota1: notas.nota1,
               nota2: notas.nota2,
               nota3: notas.nota3,
-              nota4: notas.nota4,
-            },
+              nota4: notas.nota4
+            }
           })
           .then(() => {
             return res.status(200).send({
-              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram atualizadas com sucesso`,
-            });
-          });
+              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram atualizadas com sucesso`
+            })
+          })
       }
 
       if (!notasExistentes) {
@@ -143,19 +145,19 @@ export class MatriculaController {
               nota4: notas.nota4,
               matricula: {
                 connect: {
-                  id: Number(matriculaId),
-                },
-              },
-            },
+                  id: Number(matriculaId)
+                }
+              }
+            }
           })
           .then(() => {
             return res.status(200).send({
-              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram lançadas no sistema`,
-            });
-          });
+              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram lançadas no sistema`
+            })
+          })
       }
-    } catch (e: any) {
-      return res.status(500).send({ message: e.message });
+    } catch (e) {
+      return res.status(500).send({ message: e })
     }
   }
 }

@@ -1,6 +1,6 @@
-import type { PessoaFisica, Professor } from '@prisma/client';
-import { prisma } from '../../client/prisma';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { PessoaFisica, Professor } from '@prisma/client'
+import { prisma } from '../../client/prisma'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 
 export class ProfessorController {
   async salvar(req: FastifyRequest, res: FastifyReply) {
@@ -8,35 +8,35 @@ export class ProfessorController {
       const { pessoaFisica, professor } = req.body as {
         pessoaFisica: PessoaFisica;
         professor: Professor;
-      };
+      }
 
       const pessoaFisicaExistente = await prisma.pessoaFisica.findFirst({
         where: {
-          cpf: { contains: pessoaFisica.cpf },
-        },
-      });
+          cpf: { contains: pessoaFisica.cpf }
+        }
+      })
 
-      console.log({ pessoaFisicaExistente });
+      console.log({ pessoaFisicaExistente })
 
       if (!pessoaFisicaExistente) {
         await prisma.pessoaFisica
           .create({
-            data: pessoaFisica,
+            data: pessoaFisica
           })
           .catch((err) => {
-            console.log(err);
-          });
+            console.log(err)
+          })
       }
 
       const professorExistente = await prisma.professor.findFirst({
         where: {
-          pessoaFisicaId: pessoaFisicaExistente?.id,
-        },
-      });
-      console.log(professorExistente);
+          pessoaFisicaId: pessoaFisicaExistente?.id
+        }
+      })
+      console.log(professorExistente)
 
       if (professorExistente) {
-        return res.status(409).send({ message: 'Professor já cadastrado' });
+        return res.status(409).send({ message: 'Professor já cadastrado' })
       }
 
       const newProfessor = await prisma.professor.create({
@@ -46,23 +46,23 @@ export class ProfessorController {
           titulacao: professor.titulacao,
           pessoaFisica: {
             connect: {
-              id: pessoaFisicaExistente?.id,
-            },
+              id: pessoaFisicaExistente?.id
+            }
           },
           disciplina: {
             connect: {
-              id: professor.disciplinaId,
-            },
-          },
-        },
-      });
+              id: professor.disciplinaId
+            }
+          }
+        }
+      })
 
       return res.status(201).send({
         message: 'Professor cadastrado com sucesso!',
-        newProfessor,
-      });
+        newProfessor
+      })
     } catch (err) {
-      console.log(err);
+      console.log(err)
     }
   }
 
@@ -74,21 +74,21 @@ export class ProfessorController {
             select: {
               descricao: true,
               nome: true,
-              nivel: true,
-            },
+              nivel: true
+            }
           },
-          pessoaFisica: true,
-        },
-      });
+          pessoaFisica: true
+        }
+      })
 
       return {
-        professores,
-      };
-    } catch (error: any) {
+        professores
+      }
+    } catch (error) {
       return res.status(500).send({
         message: 'Erro ao listar professores',
-        error: error.message,
-      });
+        error: error
+      })
     }
   }
 }

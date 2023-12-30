@@ -1,59 +1,58 @@
-import type { Aluno, PessoaFisica } from '@prisma/client';
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { prisma } from '../../client/prisma';
-import { gerarSenha } from '../../util/Util';
-import { hash } from 'bcrypt';
+import type { PessoaFisica } from '@prisma/client'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import { prisma } from '../../client/prisma'
+import { gerarSenha } from '../../util/Util'
+import { hash } from 'bcrypt'
 
 export class AlunoControllers {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
-      const pessoaFisicaDTO = req.body as PessoaFisica;
+      const pessoaFisicaDTO = req.body as PessoaFisica
 
-      const pessoaFisicaExistente: any = await prisma.pessoaFisica.findUnique({
+      const pessoaFisicaExistente = await prisma.pessoaFisica.findUnique({
         where: {
-          cpf: pessoaFisicaDTO.cpf,
-        },
-      });
+          cpf: pessoaFisicaDTO.cpf
+        }
+      })
 
       if (pessoaFisicaExistente) {
-        return res.send({
-          message: 'Já existe um registro com o CPF/RG informado',
-        });
+        return await res.send({
+          message: 'Já existe um registro com o CPF/RG informado'
+        })
       }
 
       const newPessoaFisica = await prisma.pessoaFisica.create({
-        data: pessoaFisicaDTO,
-      });
-      const senha = gerarSenha();
+        data: pessoaFisicaDTO
+      })
+      const senha = gerarSenha()
 
-      const hashedSenha = await hash(senha, 8);
+      const hashedSenha = await hash(senha, 8)
 
-      console.log({ pessoaFisicaDTO, newPessoaFisica });
+      console.log({ pessoaFisicaDTO, newPessoaFisica })
 
       const aluno = await prisma.aluno.create({
         data: {
           pessoaFisica: {
             connect: {
-              id: newPessoaFisica.id,
-            },
+              id: newPessoaFisica.id
+            }
           },
           usuario: newPessoaFisica.nome
             .toLowerCase()
             .split(' ')[0]
             .concat(`_${pessoaFisicaDTO.cpf.split('.')[0]}`),
-          senha: hashedSenha,
-        },
-      });
-      console.log(aluno);
+          senha: hashedSenha
+        }
+      })
       return {
         aluno,
-        senha,
-      };
-    } catch (error: any) {
-      return res.status(500).send({
+        senha
+      }
+    } catch (error) {
+      return await res.status(500).send({
         message: 'Erro ao cadastrar pessoa fisica',
-        error: error.message,
-      });
+        error: error
+      })
     }
   }
 
@@ -61,15 +60,15 @@ export class AlunoControllers {
     try {
       const alunos = await prisma.aluno.findMany({
         include: {
-          pessoaFisica: true,
-        },
-      });
-      return res.send(alunos);
-    } catch (error: any) {
-      return res.status(500).send({
+          pessoaFisica: true
+        }
+      })
+      return await res.send(alunos)
+    } catch (error) {
+      return await res.status(500).send({
         message: 'Erro ao listar alunos',
-        error: error.message,
-      });
+        error: error
+      })
     }
   }
 }

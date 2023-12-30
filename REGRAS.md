@@ -3,6 +3,7 @@ Modelo de Entidade e Relacionamento (ER)
 plaintext
 Copy code
 Aluno
+
 - ID (PK)
 - Nome
 - Data de Nascimento
@@ -11,6 +12,7 @@ Aluno
 - ...
 
 Professor
+
 - ID (PK)
 - Nome
 - Data de Nascimento
@@ -20,12 +22,14 @@ Professor
 - ...
 
 Turma
+
 - ID (PK)
 - Nome
 - Ano
 - ...
 
 Matricula
+
 - ID (PK)
 - Aluno_ID (FK)
 - Turma_ID (FK)
@@ -33,14 +37,15 @@ Matricula
 - ...
 
 Oferta
+
 - ID (PK)
 - Turma_ID (FK)
 - Disciplina_ID (FK)
 - Professor_ID (FK)
 - Ano
 - ...
-Campos Adicionais nas Tabelas
-Aluno:
+  Campos Adicionais nas Tabelas
+  Aluno:
 
 Histórico Acadêmico
 Outros atributos específicos de alunos
