@@ -1,15 +1,25 @@
 {
   "name": "backend-escola",
   "module": "index.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts"
+  },
   "type": "module",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "vitest": "^1.1.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@fastify/cors": "^8.5.0",
     "@prisma/client": "^5.7.1",
-    "prisma": "^5.7.1"
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.3.1",
+    "fastify": "^4.25.2",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^5.7.1",
+    "tsx": "^4.7.0"
   }
 }

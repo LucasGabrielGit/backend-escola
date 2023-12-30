@@ -11,26 +11,29 @@ datasource db {
 }
 
 model PessoaFisica {
-  id              Int         @id @unique @default(autoincrement())
-  nome            String
-  data_nascimento DateTime
-  genero          String
-  email           String
-  endereco        String
-  num_telefone    String
-  cpf             String      @unique
-  rg              String      @unique
-  nacionalidade   String
-  observacoes     String
-  Aluno           Aluno[]
-  Professor       Professor[]
+  id             Int         @id @unique @default(autoincrement())
+  nome           String
+  dataNascimento DateTime
+  genero         String
+  email          String
+  endereco       String
+  numTelefone    String
+  cpf            String      @unique
+  rg             String      @unique
+  nacionalidade  String
+  observacoes    String
+  aluno          Aluno[]
+  arofessor      Professor[]
 }
 
 model Aluno {
   id             Int          @id @unique @default(autoincrement())
   pessoaFisicaId Int
   pessoaFisica   PessoaFisica @relation(fields: [pessoaFisicaId], references: [id])
+  usuario        String       @unique
+  senha          String
   matriculas     Matricula[]
+  pendencias     Pendencia[]
 }
 
 model Professor {
@@ -55,7 +58,8 @@ model Turma {
 }
 
 model Matricula {
-  id Int @id @unique @default(autoincrement())
+  id              Int    @id @unique @default(autoincrement())
+  numeroMatricula String @unique
 
   alunoId Int
   aluno   Aluno @relation(fields: [alunoId], references: [id])
@@ -71,6 +75,13 @@ model Matricula {
   statusMatricula   StatusMatricula @relation(fields: [statusMatriculaId], references: [id])
 }
 
+model Pendencia {
+  id        Int    @id @unique @default(autoincrement())
+  descricao String
+  alunoId   Int
+  aluno     Aluno  @relation(fields: [alunoId], references: [id])
+}
+
 model StatusMatricula {
   id        Int         @id @unique @default(autoincrement())
   descricao String
@@ -81,8 +92,10 @@ model Nota {
   id          Int       @id @unique @default(autoincrement())
   matriculaId Int
   matricula   Matricula @relation(fields: [matriculaId], references: [id])
-  bimestre    Int
-  valor       Decimal
+  nota1       Decimal
+  nota2       Decimal
+  nota3       Decimal
+  nota4       Decimal
 }
 
 model Disciplina {
