@@ -30,8 +30,8 @@ CREATE TABLE "Professor" (
     "titulacao" TEXT NOT NULL,
     "areaEspecializacao" TEXT NOT NULL,
     "observacoes" TEXT NOT NULL,
-    CONSTRAINT "Professor_pessoaFisicaId_fkey" FOREIGN KEY ("pessoaFisicaId") REFERENCES "PessoaFisica" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Professor_disciplinaId_fkey" FOREIGN KEY ("disciplinaId") REFERENCES "Disciplina" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "Professor_disciplinaId_fkey" FOREIGN KEY ("disciplinaId") REFERENCES "Disciplina" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Professor_pessoaFisicaId_fkey" FOREIGN KEY ("pessoaFisicaId") REFERENCES "PessoaFisica" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -54,9 +54,9 @@ CREATE TABLE "Matricula" (
     "status" INTEGER NOT NULL,
     "observacoes" TEXT NOT NULL,
     "statusMatriculaId" INTEGER NOT NULL,
-    CONSTRAINT "Matricula_alunoId_fkey" FOREIGN KEY ("alunoId") REFERENCES "Aluno" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Matricula_statusMatriculaId_fkey" FOREIGN KEY ("statusMatriculaId") REFERENCES "StatusMatricula" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Matricula_turmaId_fkey" FOREIGN KEY ("turmaId") REFERENCES "Turma" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Matricula_statusMatriculaId_fkey" FOREIGN KEY ("statusMatriculaId") REFERENCES "StatusMatricula" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "Matricula_alunoId_fkey" FOREIGN KEY ("alunoId") REFERENCES "Aluno" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable

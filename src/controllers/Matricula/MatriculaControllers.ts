@@ -9,6 +9,7 @@ export class MatriculaController {
         matricula: Matricula;
       }
 
+
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
           id: matricula.alunoId
@@ -21,6 +22,10 @@ export class MatriculaController {
         }
       })
 
+      if (turmaExistente === null) {
+        return res.status(404).send({ error: 'Turma não encontrada' })
+      }
+
       if (!alunoExistente) {
         return res.status(404).send({ error: 'Aluno não encontrado' })
       }
@@ -31,11 +36,11 @@ export class MatriculaController {
         }
       })
 
-      if (matriculaExistente) {
-        return res.status(400).send({
-          error: `O aluno já está vinculado à turma: ${turmaExistente?.periodo}`
-        })
+      if (matriculaExistente !== null) {
+        return res.status(409).send({ error: 'Já existe uma matrícula para este aluno' })
       }
+
+
 
       const newMatricula = await prisma.matricula.create({
         data: {
@@ -49,8 +54,8 @@ export class MatriculaController {
             }
           },
           statusMatricula: {
-            create: {
-              descricao: matricula.status === 0 ? 'Ativa' : 'Inativa'
+            connect: {
+              id: matricula.status
             }
           },
           turma: {
@@ -61,8 +66,9 @@ export class MatriculaController {
         }
       })
 
-      console.log({
-        newMatricula
+      return res.status(201).send({
+        message: 'Matrícula finalizada com sucesso!',
+        matricula: newMatricula
       })
     } catch (error) {
       return res.status(500).send({ error: error })
@@ -73,9 +79,32 @@ export class MatriculaController {
     try {
       const matriculas = await prisma.matricula.findMany({
         include: {
-          aluno: true,
+          aluno: {
+            select: {
+              pessoaFisica: {
+                select: {
+                  nome: true,
+                  cpf: true,
+                  rg: true,
+                  numTelefone: true,
+                  observacoes: true,
+                }
+              },
+              usuario: true,
+              pendencias: {
+                select: {
+                  descricao: true
+                }
+              }
+            },
+          },
           turma: true,
-          notas: true
+          notas: true,
+          statusMatricula: {
+            select: {
+              descricao: true
+            }
+          }
         }
       })
 
