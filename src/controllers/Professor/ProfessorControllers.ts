@@ -12,8 +12,8 @@ export class ProfessorController {
 
       const pessoaFisicaExistente = await prisma.pessoaFisica.findFirst({
         where: {
-          cpf: { contains: pessoaFisica.cpf }
-        }
+          cpf: { contains: pessoaFisica.cpf },
+        },
       })
 
       console.log({ pessoaFisicaExistente })
@@ -21,7 +21,7 @@ export class ProfessorController {
       if (!pessoaFisicaExistente) {
         await prisma.pessoaFisica
           .create({
-            data: pessoaFisica
+            data: pessoaFisica,
           })
           .catch((err) => {
             console.log(err)
@@ -30,8 +30,8 @@ export class ProfessorController {
 
       const professorExistente = await prisma.professor.findFirst({
         where: {
-          pessoaFisicaId: pessoaFisicaExistente?.id
-        }
+          pessoaFisicaId: pessoaFisicaExistente?.id,
+        },
       })
       console.log(professorExistente)
 
@@ -46,20 +46,20 @@ export class ProfessorController {
           titulacao: professor.titulacao,
           pessoaFisica: {
             connect: {
-              id: pessoaFisicaExistente?.id
-            }
+              id: pessoaFisicaExistente?.id,
+            },
           },
           disciplina: {
             connect: {
-              id: professor.disciplinaId
-            }
-          }
-        }
+              id: professor.disciplinaId,
+            },
+          },
+        },
       })
 
       return res.status(201).send({
         message: 'Professor cadastrado com sucesso!',
-        newProfessor
+        newProfessor,
       })
     } catch (err) {
       console.log(err)
@@ -74,20 +74,20 @@ export class ProfessorController {
             select: {
               descricao: true,
               nome: true,
-              nivel: true
-            }
+              nivel: true,
+            },
           },
-          pessoaFisica: true
-        }
+          pessoaFisica: true,
+        },
       })
 
       return {
-        professores
+        professores,
       }
     } catch (error) {
       return res.status(500).send({
         message: 'Erro ao listar professores',
-        error: error
+        error: error,
       })
     }
   }

@@ -21,6 +21,7 @@ app.post('/aluno/salvar', alunoController.salvar)
 app.get('/aluno/listar', alunoController.listar)
 app.post('/aluno/salvarPendencia/:id', alunoController.adicionarPendencia)
 app.delete('/aluno/deletarAluno/:id', alunoController.deletarAluno)
+app.post('/aluno/buscar', alunoController.buscarPorNumeroMatriculaOuNome)
 
 // Rotas de Professor
 app.post('/professor/salvar', professorController.salvar)
@@ -32,6 +33,9 @@ app.post('/disciplina/salvar', disciplinaController.salvar)
 // Rotas de turma
 app.post('/turma/salvar', turmaController.salvar)
 app.get('/turma/listar', turmaController.listar)
+app.delete('/turma/deletar/:id', turmaController.deletar)
+app.post('/turma/buscar', turmaController.buscarPorNome)
+app.put('/turma/atualizar/:id', turmaController.atualizarTurma)
 
 // Rotas de matricula
 app.post('/matricula/salvar', new MatriculaController().salvar)
@@ -41,7 +45,7 @@ app.get('/matricula/listar', new MatriculaController().listar)
 app
   .listen({
     port: Number(process.env.PORT) || 3000,
-    host: '0.0.0.0'
+    host: '0.0.0.0',
   })
   .then(() => {
     console.log(`🚀 Server ready at http://localhost:${process.env.PORT}`)

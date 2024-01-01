@@ -9,17 +9,16 @@ export class MatriculaController {
         matricula: Matricula;
       }
 
-
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
-          id: matricula.alunoId
-        }
+          id: matricula.alunoId,
+        },
       })
 
       const turmaExistente = await prisma.turma.findFirst({
         where: {
-          id: matricula.turmaId
-        }
+          id: matricula.turmaId,
+        },
       })
 
       if (turmaExistente === null) {
@@ -32,15 +31,15 @@ export class MatriculaController {
 
       const matriculaExistente = await prisma.matricula.findFirst({
         where: {
-          alunoId: matricula.alunoId
-        }
+          alunoId: matricula.alunoId,
+        },
       })
 
       if (matriculaExistente !== null) {
-        return res.status(409).send({ error: 'Já existe uma matrícula para este aluno' })
+        return res
+          .status(409)
+          .send({ error: 'Já existe uma matrícula para este aluno' })
       }
-
-
 
       const newMatricula = await prisma.matricula.create({
         data: {
@@ -50,25 +49,25 @@ export class MatriculaController {
           numeroMatricula: String(Math.floor(Math.random() * 10000)),
           aluno: {
             connect: {
-              id: alunoExistente?.id
-            }
+              id: alunoExistente?.id,
+            },
           },
           statusMatricula: {
             connect: {
-              id: matricula.status
-            }
+              id: matricula.status,
+            },
           },
           turma: {
             connect: {
-              id: matricula.turmaId
-            }
-          }
-        }
+              id: matricula.turmaId,
+            },
+          },
+        },
       })
 
       return res.status(201).send({
         message: 'Matrícula finalizada com sucesso!',
-        matricula: newMatricula
+        matricula: newMatricula,
       })
     } catch (error) {
       return res.status(500).send({ error: error })
@@ -88,24 +87,24 @@ export class MatriculaController {
                   rg: true,
                   numTelefone: true,
                   observacoes: true,
-                }
+                },
               },
               usuario: true,
               pendencias: {
                 select: {
-                  descricao: true
-                }
-              }
+                  descricao: true,
+                },
+              },
             },
           },
           turma: true,
           notas: true,
           statusMatricula: {
             select: {
-              descricao: true
-            }
-          }
-        }
+              descricao: true,
+            },
+          },
+        },
       })
 
       return { matriculas }
@@ -123,15 +122,15 @@ export class MatriculaController {
 
       const matriculaExistente = await prisma.matricula.findFirst({
         where: {
-          id: matriculaId
+          id: matriculaId,
         },
         include: {
           aluno: {
             select: {
-              pessoaFisica: true
-            }
-          }
-        }
+              pessoaFisica: true,
+            },
+          },
+        },
       })
 
       if (matriculaExistente === null) {
@@ -140,26 +139,26 @@ export class MatriculaController {
 
       const notasExistentes = await prisma.nota.findFirst({
         where: {
-          matriculaId
-        }
+          matriculaId,
+        },
       })
 
       if (notasExistentes !== null) {
         await prisma.nota
           .update({
             where: {
-              id: notasExistentes?.id
+              id: notasExistentes?.id,
             },
             data: {
               nota1: notas.nota1,
               nota2: notas.nota2,
               nota3: notas.nota3,
-              nota4: notas.nota4
-            }
+              nota4: notas.nota4,
+            },
           })
           .then(() => {
             return res.status(200).send({
-              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram atualizadas com sucesso`
+              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram atualizadas com sucesso`,
             })
           })
       }
@@ -174,14 +173,14 @@ export class MatriculaController {
               nota4: notas.nota4,
               matricula: {
                 connect: {
-                  id: Number(matriculaId)
-                }
-              }
-            }
+                  id: Number(matriculaId),
+                },
+              },
+            },
           })
           .then(() => {
             return res.status(200).send({
-              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram lançadas no sistema`
+              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram lançadas no sistema`,
             })
           })
       }

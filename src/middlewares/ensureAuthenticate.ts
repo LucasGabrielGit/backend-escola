@@ -3,13 +3,13 @@ import { verify } from 'jsonwebtoken'
 
 export function middlewareAuthentication(
   req: FastifyRequest,
-  res: FastifyReply
+  res: FastifyReply,
 ) {
   const authToken = req.headers.authorization
 
   if (!authToken) {
     res.status(401).send({
-      message: 'Token de autenticação não encontrado'
+      message: 'Token de autenticação não encontrado',
     })
     return
   }
@@ -20,7 +20,7 @@ export function middlewareAuthentication(
     return verify(token, String(process.env.JWT_SECRET_TOKEN))
   } catch (err) {
     return res.status(401).send({
-      message: 'Token de autenticação inválido'
+      message: 'Token de autenticação inválido',
     })
   }
 }

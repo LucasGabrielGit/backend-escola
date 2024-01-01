@@ -11,18 +11,18 @@ export class AlunoControllers {
 
       const pessoaFisicaExistente = await prisma.pessoaFisica.findUnique({
         where: {
-          cpf: pessoaFisicaDTO.cpf
-        }
+          cpf: pessoaFisicaDTO.cpf,
+        },
       })
 
       if (pessoaFisicaExistente) {
         return await res.send({
-          message: 'Já existe um registro com o CPF/RG informado'
+          message: 'Já existe um registro com o CPF/RG informado',
         })
       }
 
       const newPessoaFisica = await prisma.pessoaFisica.create({
-        data: pessoaFisicaDTO
+        data: pessoaFisicaDTO,
       })
       const senha = gerarSenha()
 
@@ -34,24 +34,24 @@ export class AlunoControllers {
         data: {
           pessoaFisica: {
             connect: {
-              id: newPessoaFisica.id
-            }
+              id: newPessoaFisica.id,
+            },
           },
           usuario: newPessoaFisica.nome
             .toLowerCase()
             .split(' ')[0]
             .concat(`_${pessoaFisicaDTO.cpf.split('.')[0]}`),
-          senha: hashedSenha
-        }
+          senha: hashedSenha,
+        },
       })
       return {
         aluno,
-        senha
+        senha,
       }
     } catch (error) {
       return await res.status(500).send({
         message: 'Erro ao cadastrar pessoa fisica',
-        error: error
+        error: error,
       })
     }
   }
@@ -60,14 +60,15 @@ export class AlunoControllers {
     try {
       const alunos = await prisma.aluno.findMany({
         include: {
-          pessoaFisica: true
-        }
+          pessoaFisica: true,
+          matriculas: true
+        },
       })
       return await res.send(alunos)
     } catch (error) {
       return await res.status(500).send({
         message: 'Erro ao listar alunos',
-        error: error
+        error: error,
       })
     }
   }
@@ -81,8 +82,8 @@ export class AlunoControllers {
 
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
-          id: parseInt(id)
-        }
+          id: parseInt(id),
+        },
       })
 
       if (!alunoExistente) {
@@ -93,11 +94,11 @@ export class AlunoControllers {
         data: {
           aluno: {
             connect: {
-              id: alunoExistente.id
-            }
+              id: alunoExistente.id,
+            },
           },
-          descricao
-        }
+          descricao,
+        },
       })
 
       return { alunoExistente, pendencia }
@@ -114,50 +115,45 @@ export class AlunoControllers {
 
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
-          id: parseInt(id)
+          id: parseInt(id),
         },
         include: {
           matriculas: true,
-          pessoaFisica: true
-        }
+          pessoaFisica: true,
+        },
       })
 
       if (!alunoExistente) {
         return res.status(404).send({ error: 'Aluno não encontrado' })
       }
 
-      const alunoInativo = await prisma.aluno.findUnique(
-        {
-          where: {
-            id: parseInt(id),
-            AND: {
-              matriculas: {
-                some: {
-                  status: 1
-                }
-              }
-            }
-          },
-          include: {
-            matriculas: {
-              select: {
-                dataMatricula: true,
-                numeroMatricula: true,
-                status: true,
-                statusMatricula: true,
-                turma: true
-              }
-            }
-          }
-        }
-      )
-
-
-
-
-      const alunoAtualizado = await prisma.aluno.update({
+      await prisma.aluno.findUnique({
         where: {
-          id: parseInt(id)
+          id: parseInt(id),
+          AND: {
+            matriculas: {
+              some: {
+                status: 1,
+              },
+            },
+          },
+        },
+        include: {
+          matriculas: {
+            select: {
+              dataMatricula: true,
+              numeroMatricula: true,
+              status: true,
+              statusMatricula: true,
+              turma: true,
+            },
+          },
+        },
+      })
+
+      await prisma.aluno.update({
+        where: {
+          id: parseInt(id),
         },
         data: {
           matriculas: {
@@ -166,19 +162,65 @@ export class AlunoControllers {
                 aluno: {
                   id: parseInt(id),
                 },
-                numeroMatricula: alunoExistente.matriculas[0].numeroMatricula
+                numeroMatricula: alunoExistente.matriculas[0].numeroMatricula,
               },
               data: {
-                status: 2
-              }
-            }
-          }
-        }
+                status: 2,
+                statusMatricula: {
+                  connect: {
+                    id: 2
+                  }
+                }
+              },
+            },
+          },
+        },
       })
 
-      return { alunoExistente: alunoExistente, alunoAtualizado: alunoAtualizado, alunoInativo: alunoInativo }
+      return res.status(200).send({
+        message: 'A matrícula do aluno foi desativada'
+      })
     } catch (err) {
       return res.status(500).send({ err: err })
+    }
+  }
+
+  async buscarPorNumeroMatriculaOuNome(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { numeroMatricula, nome } = req.body as {
+        numeroMatricula: string;
+        nome: string;
+      }
+
+      const resultado = await prisma.aluno.findMany({
+        where: {
+          OR: [{
+            pessoaFisica: {
+              nome: {
+                contains: nome
+              }
+            },
+            matriculas: {
+              some: {
+                numeroMatricula
+              }
+            },
+          }]
+        },
+        include: {
+          matriculas: true,
+          pessoaFisica: true,
+        },
+      })
+
+
+      if (!resultado) {
+        return res.status(404).send({ error: 'Aluno não encontrado' })
+      }
+
+      return { resultado }
+    } catch (error) {
+      return res.status(500).send({ error: error })
     }
   }
 }

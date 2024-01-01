@@ -9,29 +9,29 @@ export class DisciplinaController {
 
       const disciplinaExistente = await prisma.disciplina.findFirst({
         where: {
-          nome: disciplinaDTO.nome
-        }
+          nome: disciplinaDTO.nome,
+        },
       })
 
       if (disciplinaExistente) {
         return res.send({
-          message: 'Já existe uma disciplina com o nome informado'
+          message: 'Já existe uma disciplina com o nome informado',
         })
       }
 
       const newDisciplina = await prisma.disciplina.create({
-        data: disciplinaDTO
+        data: disciplinaDTO,
       })
 
       console.log({ disciplinaDTO, newDisciplina })
 
       return {
-        disciplina: newDisciplina
+        disciplina: newDisciplina,
       }
     } catch (error) {
       return res.status(500).send({
         message: 'Erro ao cadastrar disciplina',
-        error: error
+        error: error,
       })
     }
   }

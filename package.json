@@ -3,7 +3,7 @@
   "module": "index.ts",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix; prettier --write ."
   },
   "type": "module",
   "devDependencies": {
