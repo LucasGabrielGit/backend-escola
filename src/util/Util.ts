@@ -5,4 +5,11 @@ function gerarSenha() {
   )
 }
 
-export { gerarSenha }
+function gerarUsuario(nome: string, cpf: string) {
+  return nome
+    .toLowerCase()
+    .split(' ')[0]
+    .concat(`_${cpf.split('.')[0]}`)
+}
+
+export { gerarSenha, gerarUsuario }

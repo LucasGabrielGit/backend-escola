@@ -2,7 +2,8 @@ import { prisma } from '../../client/prisma'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { hash } from 'bcrypt'
 import type { PessoaFisica } from '@prisma/client'
-import { gerarSenha } from '../../util/Util'
+import { gerarSenha, gerarUsuario } from '../../util/Util'
+import type { PrismaClientUnknownRequestError } from '@prisma/client/runtime/library'
 
 export class AlunoControllers {
   async salvar(req: FastifyRequest, res: FastifyReply) {
@@ -37,10 +38,7 @@ export class AlunoControllers {
               id: newPessoaFisica.id,
             },
           },
-          usuario: newPessoaFisica.nome
-            .toLowerCase()
-            .split(' ')[0]
-            .concat(`_${pessoaFisicaDTO.cpf.split('.')[0]}`),
+          usuario: gerarUsuario(newPessoaFisica.nome, newPessoaFisica.cpf),
           senha: hashedSenha,
         },
       })
@@ -61,7 +59,7 @@ export class AlunoControllers {
       const alunos = await prisma.aluno.findMany({
         include: {
           pessoaFisica: true,
-          matriculas: true
+          matriculas: true,
         },
       })
       return await res.send(alunos)
@@ -76,9 +74,9 @@ export class AlunoControllers {
   async adicionarPendencia(req: FastifyRequest, res: FastifyReply) {
     try {
       const { id } = req.params as {
-        id: string;
+        id: string
       }
-      const { descricao } = req.body as { descricao: string; }
+      const { descricao } = req.body as { descricao: string }
 
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
@@ -107,10 +105,64 @@ export class AlunoControllers {
     }
   }
 
+  async atualizarAluno(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as {
+        id: string
+      }
+      const alunoDTO = req.body as PessoaFisica
+
+      const alunoExistente = await prisma.aluno.findUnique({
+        where: {
+          id: parseInt(id),
+        },
+        include: {
+          pessoaFisica: true,
+        },
+      })
+
+      console.log(alunoExistente)
+
+      if (!alunoExistente) {
+        return res.status(404).send({ error: 'Aluno não encontrado' })
+      }
+
+      await prisma.pessoaFisica
+        .update({
+          data: alunoDTO,
+          where: {
+            id: parseInt(id),
+          },
+        })
+        .then(async (data) => {
+          console.log(data)
+          await prisma.aluno.update({
+            where: {
+              id: alunoExistente.id,
+            },
+            data: {
+              pessoaFisica: {
+                update: alunoDTO,
+              },
+            },
+          })
+          return res.send({ message: 'Aluno atualizado com sucesso!' })
+        })
+        .catch((error: PrismaClientUnknownRequestError) => {
+          return res.send({
+            message: 'Ocorreu um erro ao atualizar os dados do aluno',
+            error: error.message,
+          })
+        })
+    } catch (err) {
+      console.error({ error: err })
+    }
+  }
+
   async deletarAluno(req: FastifyRequest, res: FastifyReply) {
     try {
       const { id } = req.params as {
-        id: string;
+        id: string
       }
 
       const alunoExistente = await prisma.aluno.findUnique({
@@ -168,9 +220,9 @@ export class AlunoControllers {
                 status: 2,
                 statusMatricula: {
                   connect: {
-                    id: 2
-                  }
-                }
+                    id: 2,
+                  },
+                },
               },
             },
           },
@@ -178,7 +230,7 @@ export class AlunoControllers {
       })
 
       return res.status(200).send({
-        message: 'A matrícula do aluno foi desativada'
+        message: 'A matrícula do aluno foi desativada',
       })
     } catch (err) {
       return res.status(500).send({ err: err })
@@ -188,31 +240,32 @@ export class AlunoControllers {
   async buscarPorNumeroMatriculaOuNome(req: FastifyRequest, res: FastifyReply) {
     try {
       const { numeroMatricula, nome } = req.body as {
-        numeroMatricula: string;
-        nome: string;
+        numeroMatricula: string
+        nome: string
       }
 
       const resultado = await prisma.aluno.findMany({
         where: {
-          OR: [{
-            pessoaFisica: {
-              nome: {
-                contains: nome
-              }
+          OR: [
+            {
+              pessoaFisica: {
+                nome: {
+                  contains: nome,
+                },
+              },
+              matriculas: {
+                some: {
+                  numeroMatricula,
+                },
+              },
             },
-            matriculas: {
-              some: {
-                numeroMatricula
-              }
-            },
-          }]
+          ],
         },
         include: {
           matriculas: true,
           pessoaFisica: true,
         },
       })
-
 
       if (!resultado) {
         return res.status(404).send({ error: 'Aluno não encontrado' })

@@ -120,13 +120,13 @@ export class TurmaController {
 
   async atualizarTurma(req: FastifyRequest, res: FastifyReply) {
     try {
-      const { id } = req.params as { id: string } 
+      const { id } = req.params as { id: string }
       const turmaDTO = req.body as Turma
 
       const turmaExistente = await prisma.turma.findUnique({
         where: {
           id: parseInt(id),
-        }
+        },
       })
 
       if (!turmaExistente) {
@@ -135,18 +135,19 @@ export class TurmaController {
         })
       }
 
-     await prisma.turma.update({
-        data: turmaDTO,
-        where: {
-          id: parseInt(id),
-        }
-      }).then(() => {
-        return res.send({ message: 'Turma atualizada com sucesso!' })
-      })
-
+      await prisma.turma
+        .update({
+          data: turmaDTO,
+          where: {
+            id: parseInt(id),
+          },
+        })
+        .then(() => {
+          return res.send({ message: 'Turma atualizada com sucesso!' })
+        })
     } catch (error) {
       return res.status(500).send({
-        message: error
+        message: error,
       })
     }
   }

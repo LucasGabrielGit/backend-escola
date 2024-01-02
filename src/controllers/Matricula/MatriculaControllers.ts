@@ -6,7 +6,7 @@ export class MatriculaController {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
       const { matricula } = req.body as {
-        matricula: Matricula;
+        matricula: Matricula
       }
 
       const alunoExistente = await prisma.aluno.findUnique({
@@ -41,33 +41,45 @@ export class MatriculaController {
           .send({ error: 'Já existe uma matrícula para este aluno' })
       }
 
-      const newMatricula = await prisma.matricula.create({
-        data: {
-          dataMatricula: matricula.dataMatricula,
-          observacoes: matricula.observacoes,
-          status: matricula.status,
-          numeroMatricula: String(Math.floor(Math.random() * 10000)),
-          aluno: {
-            connect: {
-              id: alunoExistente?.id,
+      if (turmaExistente.capacidade > 0) {
+        await prisma.matricula
+          .create({
+            data: {
+              dataMatricula: matricula.dataMatricula,
+              observacoes: matricula.observacoes,
+              status: matricula.status,
+              numeroMatricula: String(Math.floor(Math.random() * 10000)),
+              aluno: {
+                connect: {
+                  id: alunoExistente?.id,
+                },
+              },
+              statusMatricula: {
+                connect: {
+                  id: matricula.status,
+                },
+              },
+              turma: {
+                connect: {
+                  id: matricula.turmaId,
+                },
+              },
             },
-          },
-          statusMatricula: {
-            connect: {
-              id: matricula.status,
-            },
-          },
-          turma: {
-            connect: {
-              id: matricula.turmaId,
-            },
-          },
-        },
-      })
+          })
+          .then(async () => {
+            await prisma.turma.update({
+              where: { id: turmaExistente.id },
+              data: {
+                capacidade: turmaExistente.capacidade - 1,
+              },
+            })
+          })
+      } else {
+        return res.status(500).send({ message: 'Não há vagas para esta turma' })
+      }
 
       return res.status(201).send({
         message: 'Matrícula finalizada com sucesso!',
-        matricula: newMatricula,
       })
     } catch (error) {
       return res.status(500).send({ error: error })
@@ -116,8 +128,8 @@ export class MatriculaController {
   async salvarNotas(req: FastifyRequest, res: FastifyReply): Promise<void> {
     try {
       const { notas, matriculaId } = req.body as {
-        notas: Nota;
-        matriculaId: number;
+        notas: Nota
+        matriculaId: number
       }
 
       const matriculaExistente = await prisma.matricula.findFirst({

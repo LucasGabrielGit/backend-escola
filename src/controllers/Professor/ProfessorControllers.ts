@@ -6,8 +6,8 @@ export class ProfessorController {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
       const { pessoaFisica, professor } = req.body as {
-        pessoaFisica: PessoaFisica;
-        professor: Professor;
+        pessoaFisica: PessoaFisica
+        professor: Professor
       }
 
       const pessoaFisicaExistente = await prisma.pessoaFisica.findFirst({

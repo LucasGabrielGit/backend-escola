@@ -22,6 +22,7 @@ app.get('/aluno/listar', alunoController.listar)
 app.post('/aluno/salvarPendencia/:id', alunoController.adicionarPendencia)
 app.delete('/aluno/deletarAluno/:id', alunoController.deletarAluno)
 app.post('/aluno/buscar', alunoController.buscarPorNumeroMatriculaOuNome)
+app.patch('/aluno/atualizar/:id', alunoController.atualizarAluno)
 
 // Rotas de Professor
 app.post('/professor/salvar', professorController.salvar)
