@@ -8,44 +8,45 @@ import type { PrismaClientUnknownRequestError } from '@prisma/client/runtime/lib
 export class AlunoControllers {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
-      const pessoaFisicaDTO = req.body as PessoaFisica
+      const { pessoaFisica } = req.body as { pessoaFisica: PessoaFisica }
 
       const pessoaFisicaExistente = await prisma.pessoaFisica.findUnique({
         where: {
-          cpf: pessoaFisicaDTO.cpf,
+          cpf: pessoaFisica.cpf,
         },
       })
 
-      if (pessoaFisicaExistente) {
-        return await res.send({
+      if (!pessoaFisicaExistente) {
+        const newPessoaFisica = await prisma.pessoaFisica.create({
+          data: pessoaFisica,
+        })
+        const senha = gerarSenha()
+        const hashedSenha = await hash(senha, 8)
+        await prisma.aluno
+          .create({
+            data: {
+              pessoaFisica: {
+                connect: {
+                  id: newPessoaFisica.id,
+                },
+              },
+              usuario: gerarUsuario(newPessoaFisica.nome, newPessoaFisica.cpf),
+              senha: hashedSenha,
+            },
+          })
+          .then((a) => {
+            return res.status(201).send({
+              senha,
+              usuario: a.usuario,
+            })
+          })
+      } else {
+        return res.status(409).send({
           message: 'Já existe um registro com o CPF/RG informado',
         })
       }
 
-      const newPessoaFisica = await prisma.pessoaFisica.create({
-        data: pessoaFisicaDTO,
-      })
-      const senha = gerarSenha()
-
-      const hashedSenha = await hash(senha, 8)
-
-      console.log({ pessoaFisicaDTO, newPessoaFisica })
-
-      const aluno = await prisma.aluno.create({
-        data: {
-          pessoaFisica: {
-            connect: {
-              id: newPessoaFisica.id,
-            },
-          },
-          usuario: gerarUsuario(newPessoaFisica.nome, newPessoaFisica.cpf),
-          senha: hashedSenha,
-        },
-      })
-      return {
-        aluno,
-        senha,
-      }
+      return res.status(201)
     } catch (error) {
       return await res.status(500).send({
         message: 'Erro ao cadastrar pessoa fisica',
@@ -59,7 +60,15 @@ export class AlunoControllers {
       const alunos = await prisma.aluno.findMany({
         include: {
           pessoaFisica: true,
-          matriculas: true,
+          matriculas: {
+            select: {
+              dataMatricula: true,
+              numeroMatricula: true,
+              observacoes: true,
+              turma: true,
+              status: true,
+            },
+          },
         },
       })
       return await res.send(alunos)
@@ -121,8 +130,6 @@ export class AlunoControllers {
         },
       })
 
-      console.log(alunoExistente)
-
       if (!alunoExistente) {
         return res.status(404).send({ error: 'Aluno não encontrado' })
       }
@@ -134,8 +141,7 @@ export class AlunoControllers {
             id: parseInt(id),
           },
         })
-        .then(async (data) => {
-          console.log(data)
+        .then(async () => {
           await prisma.aluno.update({
             where: {
               id: alunoExistente.id,
@@ -196,7 +202,6 @@ export class AlunoControllers {
               dataMatricula: true,
               numeroMatricula: true,
               status: true,
-              statusMatricula: true,
               turma: true,
             },
           },
@@ -217,12 +222,7 @@ export class AlunoControllers {
                 numeroMatricula: alunoExistente.matriculas[0].numeroMatricula,
               },
               data: {
-                status: 2,
-                statusMatricula: {
-                  connect: {
-                    id: 2,
-                  },
-                },
+                status: 1,
               },
             },
           },

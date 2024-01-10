@@ -15,6 +15,8 @@ export class MatriculaController {
         },
       })
 
+      console.log(alunoExistente)
+
       const turmaExistente = await prisma.turma.findFirst({
         where: {
           id: matricula.turmaId,
@@ -23,10 +25,6 @@ export class MatriculaController {
 
       if (turmaExistente === null) {
         return res.status(404).send({ error: 'Turma não encontrada' })
-      }
-
-      if (!alunoExistente) {
-        return res.status(404).send({ error: 'Aluno não encontrado' })
       }
 
       const matriculaExistente = await prisma.matricula.findFirst({
@@ -51,12 +49,7 @@ export class MatriculaController {
               numeroMatricula: String(Math.floor(Math.random() * 10000)),
               aluno: {
                 connect: {
-                  id: alunoExistente?.id,
-                },
-              },
-              statusMatricula: {
-                connect: {
-                  id: matricula.status,
+                  id: matricula.alunoId,
                 },
               },
               turma: {
@@ -94,6 +87,7 @@ export class MatriculaController {
             select: {
               pessoaFisica: {
                 select: {
+                  id: true,
                   nome: true,
                   cpf: true,
                   rg: true,
@@ -111,11 +105,6 @@ export class MatriculaController {
           },
           turma: true,
           notas: true,
-          statusMatricula: {
-            select: {
-              descricao: true,
-            },
-          },
         },
       })
 

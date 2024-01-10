@@ -55,18 +55,16 @@ model Turma {
 }
 
 model Matricula {
-  id                Int             @id @unique @default(autoincrement())
-  numeroMatricula   String          @unique
-  alunoId           Int
-  turmaId           Int
-  dataMatricula     DateTime
-  status            Int
-  observacoes       String
-  statusMatriculaId Int
-  statusMatricula   StatusMatricula @relation(fields: [statusMatriculaId], references: [id])
-  turma             Turma           @relation(fields: [turmaId], references: [id])
-  aluno             Aluno           @relation(fields: [alunoId], references: [id])
-  notas             Nota[]
+  id              Int      @id @unique @default(autoincrement())
+  numeroMatricula String   @unique
+  alunoId         Int
+  turmaId         Int
+  dataMatricula   DateTime
+  status          Int
+  observacoes     String
+  turma           Turma    @relation(fields: [turmaId], references: [id])
+  aluno           Aluno    @relation(fields: [alunoId], references: [id])
+  notas           Nota[]
 }
 
 model Pendencia {
@@ -74,12 +72,6 @@ model Pendencia {
   descricao String
   alunoId   Int
   aluno     Aluno  @relation(fields: [alunoId], references: [id])
-}
-
-model StatusMatricula {
-  id        Int         @id @unique @default(autoincrement())
-  descricao String
-  matricula Matricula[]
 }
 
 model Nota {

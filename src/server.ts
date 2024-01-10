@@ -27,9 +27,12 @@ app.patch('/aluno/atualizar/:id', alunoController.atualizarAluno)
 // Rotas de Professor
 app.post('/professor/salvar', professorController.salvar)
 app.get('/professor/listar', professorController.listar)
+app.patch('/professor/atualizar/:id', professorController.atualizar)
 
 // Rotas de Disciplina
 app.post('/disciplina/salvar', disciplinaController.salvar)
+app.get('/disciplina/listar', disciplinaController.listar)
+app.delete('/disciplina/deletar/:id', disciplinaController.deletar)
 
 // Rotas de turma
 app.post('/turma/salvar', turmaController.salvar)
