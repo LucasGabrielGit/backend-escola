@@ -189,4 +189,70 @@ export class MatriculaController {
       return res.status(500).send({ message: e })
     }
   }
+
+  async buscarPorMatriculaOuNome(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { nomeAluno, numeroMatricula } = req.body as {
+        numeroMatricula: string
+        nomeAluno: string
+      }
+
+      const matricula = await prisma.matricula.findMany({
+        where: {
+          OR: [
+            {
+              numeroMatricula: {
+                contains: numeroMatricula,
+              },
+            },
+            {
+              aluno: {
+                pessoaFisica: {
+                  nome: {
+                    contains: nomeAluno,
+                  },
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          aluno: {
+            include: {
+              pessoaFisica: true,
+            },
+          },
+          turma: true,
+        },
+      })
+
+      return res.status(200).send(matricula)
+    } catch (error) {
+      return res
+        .status(500)
+        .send({ message: 'Ocorreu um erro ao buscar matrícula', error })
+    }
+  }
+
+  async buscarMatriculaPorId(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string }
+
+      const matricula = await prisma.matricula.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          aluno: { include: { pessoaFisica: true } },
+          notas: true,
+          turma: true,
+        },
+      })
+
+      if (!matricula)
+        return res.status(404).send({ message: 'Matrícula não encontrada' })
+
+      return res.status(200).send(matricula)
+    } catch (error) {
+      return res.status(500).send({ error: error })
+    }
+  }
 }

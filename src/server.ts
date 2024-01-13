@@ -45,6 +45,11 @@ app.put('/turma/atualizar/:id', turmaController.atualizarTurma)
 app.post('/matricula/salvar', new MatriculaController().salvar)
 app.post('/matricula/salvarNotas', new MatriculaController().salvarNotas)
 app.get('/matricula/listar', new MatriculaController().listar)
+app.post(
+  '/matricula/buscar',
+  new MatriculaController().buscarPorMatriculaOuNome
+)
+app.get('/matricula/detalhe/:id', new MatriculaController().buscarMatriculaPorId)
 
 app
   .listen({
