@@ -1,15 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from '../../client/prisma'
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { hash } from 'bcrypt'
-import type { PessoaFisica } from '@prisma/client'
+import type { Aluno, PessoaFisica } from '@prisma/client'
 import { gerarSenha, gerarUsuario } from '../../util/Util'
-import type { PrismaClientUnknownRequestError } from '@prisma/client/runtime/library'
+import { compare, hash } from 'bcrypt'
+import jwt from 'jsonwebtoken'
+
+
+interface AuthData {
+  token: string;
+  usuario: Aluno
+}
 
 export class AlunoControllers {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
       const { pessoaFisica } = req.body as { pessoaFisica: PessoaFisica }
-
+      console.log(pessoaFisica)
       const pessoaFisicaExistente = await prisma.pessoaFisica.findUnique({
         where: {
           cpf: pessoaFisica.cpf,
@@ -47,10 +54,10 @@ export class AlunoControllers {
       }
 
       return res.status(201)
-    } catch (error) {
+    } catch (error: any) {
       return await res.status(500).send({
         message: 'Erro ao cadastrar pessoa fisica',
-        error: error,
+        error: error.message,
       })
     }
   }
@@ -60,11 +67,10 @@ export class AlunoControllers {
       const alunos = await prisma.aluno.findMany({
         include: {
           pessoaFisica: true,
-          matriculas: {
+          matricula: {
             select: {
               dataMatricula: true,
               numeroMatricula: true,
-              observacoes: true,
               turma: true,
               status: true,
             },
@@ -77,40 +83,6 @@ export class AlunoControllers {
         message: 'Erro ao listar alunos',
         error: error,
       })
-    }
-  }
-
-  async adicionarPendencia(req: FastifyRequest, res: FastifyReply) {
-    try {
-      const { id } = req.params as {
-        id: string
-      }
-      const { descricao } = req.body as { descricao: string }
-
-      const alunoExistente = await prisma.aluno.findUnique({
-        where: {
-          id: parseInt(id),
-        },
-      })
-
-      if (!alunoExistente) {
-        return res.status(404).send({ error: 'Aluno não encontrado' })
-      }
-
-      const pendencia = await prisma.pendencia.create({
-        data: {
-          aluno: {
-            connect: {
-              id: alunoExistente.id,
-            },
-          },
-          descricao,
-        },
-      })
-
-      return { alunoExistente, pendencia }
-    } catch (error) {
-      return res.status(500).send({ error: error })
     }
   }
 
@@ -134,31 +106,20 @@ export class AlunoControllers {
         return res.status(404).send({ error: 'Aluno não encontrado' })
       }
 
-      await prisma.pessoaFisica
+      await prisma.aluno
         .update({
-          data: alunoDTO,
+          data: {
+            pessoaFisica: { update: alunoDTO },
+          },
           where: {
             id: parseInt(id),
           },
         })
         .then(async () => {
-          await prisma.aluno.update({
-            where: {
-              id: alunoExistente.id,
-            },
-            data: {
-              pessoaFisica: {
-                update: alunoDTO,
-              },
-            },
-          })
           return res.send({ message: 'Aluno atualizado com sucesso!' })
         })
-        .catch((error: PrismaClientUnknownRequestError) => {
-          return res.send({
-            message: 'Ocorreu um erro ao atualizar os dados do aluno',
-            error: error.message,
-          })
+        .catch((error) => {
+          console.log(error.message)
         })
     } catch (err) {
       console.error({ error: err })
@@ -176,7 +137,7 @@ export class AlunoControllers {
           id: parseInt(id),
         },
         include: {
-          matriculas: true,
+          matricula: true,
           pessoaFisica: true,
         },
       })
@@ -189,7 +150,7 @@ export class AlunoControllers {
         where: {
           id: parseInt(id),
           AND: {
-            matriculas: {
+            matricula: {
               some: {
                 status: 1,
               },
@@ -197,7 +158,7 @@ export class AlunoControllers {
           },
         },
         include: {
-          matriculas: {
+          matricula: {
             select: {
               dataMatricula: true,
               numeroMatricula: true,
@@ -213,13 +174,13 @@ export class AlunoControllers {
           id: parseInt(id),
         },
         data: {
-          matriculas: {
+          matricula: {
             update: {
               where: {
-                aluno: {
-                  id: parseInt(id),
+                alunos: {
+                  every: { id: parseInt(id) }
                 },
-                numeroMatricula: alunoExistente.matriculas[0].numeroMatricula,
+                numeroMatricula: alunoExistente.matricula[0].numeroMatricula,
               },
               data: {
                 status: 1,
@@ -253,7 +214,7 @@ export class AlunoControllers {
                   contains: nome,
                 },
               },
-              matriculas: {
+              matricula: {
                 some: {
                   numeroMatricula,
                 },
@@ -262,7 +223,7 @@ export class AlunoControllers {
           ],
         },
         include: {
-          matriculas: true,
+          matricula: true,
           pessoaFisica: true,
         },
       })
@@ -275,5 +236,63 @@ export class AlunoControllers {
     } catch (error) {
       return res.status(500).send({ error: error })
     }
+  }
+
+  async buscarPorId(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string }
+
+      console.log(id)
+
+      await prisma.aluno
+        .findUnique({
+          where: { id: parseInt(id) },
+          include: {
+            pessoaFisica: true,
+          },
+        })
+        .then((response) => {
+          return res.status(200).send(response)
+        })
+        .catch((error) => {
+          return res.status(500).send(error.message)
+        })
+    } catch (error) {
+      return res.status(500).send(error)
+    }
+  }
+
+  async login(req: FastifyRequest, reply: FastifyReply): Promise<AuthData> {
+    const { login, senha } = req.body as { login: string; senha: string }
+
+
+    const usuario = await prisma.aluno.findFirst({
+      where: {
+        usuario: login,
+      },
+      select: {
+        id: true,
+        matricula: true,
+        pessoaFisica: true,
+        senha: true,
+        usuario: true,
+        pessoaFisicaId: true
+      }
+    })
+
+
+    if (!usuario) throw new Error('Usuário não encontrado!')
+
+    const matchSenha = await compare(senha, usuario.senha)
+
+    if (!matchSenha) reply.status(500).send({ message: 'Senha inválida!' })
+
+    const token = jwt.sign({}, String(process.env.JWT_SECRET), {
+      subject: usuario.id.toString(),
+      expiresIn: '30m',
+    })
+
+    return { token, usuario }
+
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Matricula, Nota } from '@prisma/client'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { prisma } from '../../client/prisma'
@@ -8,14 +9,6 @@ export class MatriculaController {
       const { matricula } = req.body as {
         matricula: Matricula
       }
-
-      const alunoExistente = await prisma.aluno.findUnique({
-        where: {
-          id: matricula.alunoId,
-        },
-      })
-
-      console.log(alunoExistente)
 
       const turmaExistente = await prisma.turma.findFirst({
         where: {
@@ -44,10 +37,9 @@ export class MatriculaController {
           .create({
             data: {
               dataMatricula: matricula.dataMatricula,
-              observacoes: matricula.observacoes,
               status: matricula.status,
               numeroMatricula: String(Math.floor(Math.random() * 10000)),
-              aluno: {
+              alunos: {
                 connect: {
                   id: matricula.alunoId,
                 },
@@ -57,6 +49,7 @@ export class MatriculaController {
                   id: matricula.turmaId,
                 },
               },
+              alunoId: matricula.alunoId
             },
           })
           .then(async () => {
@@ -83,7 +76,7 @@ export class MatriculaController {
     try {
       const matriculas = await prisma.matricula.findMany({
         include: {
-          aluno: {
+          alunos: {
             select: {
               pessoaFisica: {
                 select: {
@@ -96,13 +89,9 @@ export class MatriculaController {
                 },
               },
               usuario: true,
-              pendencias: {
-                select: {
-                  descricao: true,
-                },
-              },
             },
           },
+          pendencia: true,
           turma: true,
           notas: true,
         },
@@ -116,17 +105,17 @@ export class MatriculaController {
 
   async salvarNotas(req: FastifyRequest, res: FastifyReply): Promise<void> {
     try {
-      const { notas, matriculaId } = req.body as {
-        notas: Nota
-        matriculaId: number
+      const { id } = req.params as {
+        id: string
       }
+      const { notas, disciplina } = req.body as { notas: Nota, disciplina: number }
 
       const matriculaExistente = await prisma.matricula.findFirst({
         where: {
-          id: matriculaId,
+          id: parseInt(id),
         },
         include: {
-          aluno: {
+          alunos: {
             select: {
               pessoaFisica: true,
             },
@@ -140,7 +129,7 @@ export class MatriculaController {
 
       const notasExistentes = await prisma.nota.findFirst({
         where: {
-          matriculaId,
+          id: parseInt(id),
         },
       })
 
@@ -159,7 +148,7 @@ export class MatriculaController {
           })
           .then(() => {
             return res.status(200).send({
-              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram atualizadas com sucesso`,
+              message: 'As notas do aluno foram atualizadas com sucesso',
             })
           })
       }
@@ -174,14 +163,19 @@ export class MatriculaController {
               nota4: notas.nota4,
               matricula: {
                 connect: {
-                  id: Number(matriculaId),
+                  id: Number(id),
                 },
               },
+              disciplina: {
+                connect: {
+                  id: disciplina,
+                }
+              }
             },
           })
           .then(() => {
             return res.status(200).send({
-              message: `As notas do aluno {${matriculaExistente.aluno.pessoaFisica.nome}} foram lançadas no sistema`,
+              message: 'As notas do aluno foram lançadas no sistema',
             })
           })
       }
@@ -206,18 +200,20 @@ export class MatriculaController {
               },
             },
             {
-              aluno: {
-                pessoaFisica: {
-                  nome: {
-                    contains: nomeAluno,
+              alunos: {
+                every: {
+                  pessoaFisica: {
+                    nome: {
+                      contains: nomeAluno,
+                    },
                   },
-                },
+                }
               },
             },
           ],
         },
         include: {
-          aluno: {
+          alunos: {
             include: {
               pessoaFisica: true,
             },
@@ -241,7 +237,7 @@ export class MatriculaController {
       const matricula = await prisma.matricula.findUnique({
         where: { id: parseInt(id) },
         include: {
-          aluno: { include: { pessoaFisica: true } },
+          alunos: { include: { pessoaFisica: true } },
           notas: true,
           turma: true,
         },
@@ -255,4 +251,41 @@ export class MatriculaController {
       return res.status(500).send({ error: error })
     }
   }
+
+  async lancarPendencia(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string }
+      const { pendencia } = req.body as { pendencia: string }
+
+      const matricula = await prisma.matricula.findUnique({
+        where: {
+          id: parseInt(id)
+        },
+        include: {
+          pendencia: true,
+        }
+      })
+
+      if (!matricula) {
+        return res.status(404).send({ message: 'Matrícula não encontrada' })
+      }
+
+      await prisma.matricula.update({
+        data: {
+          pendencia: {
+            create: {
+              descricao: pendencia
+            }
+          }
+        },
+        where: {
+          id: parseInt(id)
+        }
+      })
+
+    } catch (error: any) {
+      return res.status(500).send({ error: error.message })
+    }
+  }
 }
+

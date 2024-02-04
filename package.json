@@ -22,8 +22,9 @@
   },
   "dependencies": {
     "@fastify/cors": "^8.5.0",
-    "@prisma/client": "5.7.1",
+    "@prisma/client": "latest",
     "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
     "@typescript-eslint/parser": "^6.16.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.3.1",
@@ -32,7 +33,7 @@
     "fastify": "^4.25.2",
     "jsonwebtoken": "^9.0.2",
     "prettier": "^3.1.1",
-    "prisma": "5.7.1",
+    "prisma": "latest",
     "tslint": "^6.1.3",
     "tsx": "^4.7.0"
   }

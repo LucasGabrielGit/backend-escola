@@ -19,10 +19,13 @@ const turmaController = new TurmaController()
 // Rotas de aluno
 app.post('/aluno/salvar', alunoController.salvar)
 app.get('/aluno/listar', alunoController.listar)
-app.post('/aluno/salvarPendencia/:id', alunoController.adicionarPendencia)
 app.delete('/aluno/deletarAluno/:id', alunoController.deletarAluno)
+app.get('/aluno/detalhe/:id', alunoController.buscarPorId)
 app.post('/aluno/buscar', alunoController.buscarPorNumeroMatriculaOuNome)
 app.patch('/aluno/atualizar/:id', alunoController.atualizarAluno)
+
+
+app.post('/login', alunoController.login)
 
 // Rotas de Professor
 app.post('/professor/salvar', professorController.salvar)
@@ -33,23 +36,33 @@ app.patch('/professor/atualizar/:id', professorController.atualizar)
 app.post('/disciplina/salvar', disciplinaController.salvar)
 app.get('/disciplina/listar', disciplinaController.listar)
 app.delete('/disciplina/deletar/:id', disciplinaController.deletar)
+app.get('/disciplina/:id', disciplinaController.buscarPorId)
 
 // Rotas de turma
 app.post('/turma/salvar', turmaController.salvar)
 app.get('/turma/listar', turmaController.listar)
+app.get('/turma/detalhe/:id', turmaController.buscarPorId)
 app.delete('/turma/deletar/:id', turmaController.deletar)
 app.post('/turma/buscar', turmaController.buscarPorNome)
 app.put('/turma/atualizar/:id', turmaController.atualizarTurma)
+app.put('/turma/remover-disciplina/:id', turmaController.removerDisciplina)
 
 // Rotas de matricula
 app.post('/matricula/salvar', new MatriculaController().salvar)
-app.post('/matricula/salvarNotas', new MatriculaController().salvarNotas)
+app.post('/matricula/salvarNotas/:id', new MatriculaController().salvarNotas)
 app.get('/matricula/listar', new MatriculaController().listar)
 app.post(
   '/matricula/buscar',
   new MatriculaController().buscarPorMatriculaOuNome
 )
-app.get('/matricula/detalhe/:id', new MatriculaController().buscarMatriculaPorId)
+app.post(
+  '/matricula/lancar-pendencia/:id',
+  new MatriculaController().lancarPendencia
+)
+app.get(
+  '/matricula/detalhe/:id',
+  new MatriculaController().buscarMatriculaPorId
+)
 
 app
   .listen({

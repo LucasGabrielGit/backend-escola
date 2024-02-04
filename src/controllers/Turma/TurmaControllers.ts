@@ -1,11 +1,23 @@
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { prisma } from '../../client/prisma'
-import type { Turma } from '@prisma/client'
+import type { Disciplina, Professor, } from '@prisma/client'
+
+type TurmaType = {
+  id?: number
+  ano: string
+  periodo: string
+  capacidade: number
+  turno: string
+  professores: Professor[]
+  disciplinas: Disciplina[]
+}
 
 export class TurmaController {
   async salvar(req: FastifyRequest, res: FastifyReply) {
     try {
-      const turma = req.body as Turma
+      const turma = req.body as TurmaType
 
       const turmaExistente = await prisma.turma.findFirst({
         where: {
@@ -24,12 +36,24 @@ export class TurmaController {
       }
 
       const newTurma = await prisma.turma.create({
-        data: turma,
+        data: {
+          ...turma,
+          professores: {
+            connect: turma.professores ? turma.professores.map(professor => ({ id: professor.id })) : undefined
+          },
+          disciplinas: {
+            connect: turma.disciplinas ? turma.disciplinas.map(disciplina => ({ id: disciplina.id })) : undefined
+          }
+        },
       })
 
+
+
+      console.log(newTurma)
+
       return { newTurma }
-    } catch (error) {
-      return res.status(500).send({ message: error })
+    } catch (error: any) {
+      return res.status(500).send({ message: error.message })
     }
   }
 
@@ -38,10 +62,34 @@ export class TurmaController {
       const turmas = await prisma.turma.findMany({
         include: {
           matriculas: {
-            include: {
-              aluno: true,
+            select: {
+              alunos: {
+                select: {
+                  pessoaFisica: {
+                    select: {
+                      nome: true,
+                    },
+                  }
+                },
+              }
+
             },
           },
+          disciplinas: {
+            select: {
+              nome: true,
+            },
+          },
+          professores: {
+            select: {
+              areaEspecializacao: true,
+              pessoaFisica: {
+                select: {
+                  nome: true,
+                }
+              }
+            }
+          }
         },
       })
 
@@ -95,6 +143,39 @@ export class TurmaController {
     }
   }
 
+  async buscarPorId(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string }
+      await prisma.turma
+        .findUnique({
+          where: {
+            id: parseInt(id),
+          },
+          include: {
+            matriculas: {
+              include: {
+                alunos: {
+                  include: {
+                    pessoaFisica: true,
+                  },
+                },
+                notas: true,
+                turma: true,
+              },
+            },
+          },
+        })
+        .then((response) => {
+          return res.status(200).send(response)
+        })
+        .catch((err) => {
+          return res.status(500).send(err.message)
+        })
+    } catch (error) {
+      return res.status(500).send(error)
+    }
+  }
+
   async buscarPorNome(req: FastifyRequest, res: FastifyReply) {
     try {
       const { periodo } = req.body as { periodo: string }
@@ -106,7 +187,7 @@ export class TurmaController {
         include: {
           matriculas: {
             include: {
-              aluno: true,
+              alunos: true,
             },
           },
         },
@@ -121,23 +202,19 @@ export class TurmaController {
   async atualizarTurma(req: FastifyRequest, res: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
-      const turmaDTO = req.body as Turma
-
-      const turmaExistente = await prisma.turma.findUnique({
-        where: {
-          id: parseInt(id),
-        },
-      })
-
-      if (!turmaExistente) {
-        return res.status(404).send({
-          message: 'Turma não encontrada',
-        })
-      }
+      const turmaDTO = req.body as TurmaType
 
       await prisma.turma
         .update({
-          data: turmaDTO,
+          data: {
+            ...turmaDTO,
+            professores: {
+              connect: turmaDTO.professores ? turmaDTO.professores.map(professor => ({ id: professor.id })) : undefined
+            },
+            disciplinas: {
+              connect: turmaDTO.disciplinas ? turmaDTO.disciplinas.map(disciplina => ({ id: disciplina.id })) : undefined
+            }
+          },
           where: {
             id: parseInt(id),
           },
@@ -145,10 +222,51 @@ export class TurmaController {
         .then(() => {
           return res.send({ message: 'Turma atualizada com sucesso!' })
         })
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).send({
-        message: error,
+        message: error.message,
       })
+    }
+  }
+
+  async removerDisciplina(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string }
+      const { disciplinas } = req.body as { disciplinas: number[] }
+      const turma = await prisma.turma.findUnique({
+        where: {
+          id: parseInt(id)
+        },
+        include: {
+          disciplinas: true,
+          professores: true,
+        }
+      })
+      console.log(disciplinas)
+
+      if (turma !== null) {
+        const disciplinasAtualizadas = turma.disciplinas.filter(d => disciplinas ? disciplinas.includes(d.id) : undefined)
+        console.log(disciplinasAtualizadas)
+        await prisma.turma.update({
+          where: {
+            id: parseInt(id)
+          },
+          data: {
+            disciplinas: {
+              disconnect: disciplinas ? disciplinas.map((disciplina: any) => ({ id: Number(disciplina.id) })) : undefined
+            }
+          }
+
+        }).then(() => {
+          return res.status(200).send({
+            message: 'Disciplina removida com sucesso da turma!'
+          })
+        }).catch((err) => {
+          return res.status(500).send({ error: err.message })
+        })
+      }
+    } catch (err: any) {
+      console.log(err.message)
     }
   }
 }
