@@ -49,7 +49,6 @@ export class MatriculaController {
                   id: matricula.turmaId,
                 },
               },
-              alunoId: matricula.alunoId
             },
           })
           .then(async () => {
@@ -91,9 +90,21 @@ export class MatriculaController {
               usuario: true,
             },
           },
-          pendencia: true,
+          pendencias: true,
           turma: true,
-          notas: true,
+          notas: {
+            select: {
+              disciplina: {
+                select: {
+                  nome: true,
+                },
+              },
+              nota1: true,
+              nota2: true,
+              nota3: true,
+              nota4: true,
+            },
+          },
         },
       })
 
@@ -110,9 +121,15 @@ export class MatriculaController {
       }
       const { notas, disciplina } = req.body as { notas: Nota, disciplina: number }
 
+      const notasExistentes = await prisma.nota.findFirst({
+        where: {
+          disciplinaId: disciplina
+        },
+      })
+
       const matriculaExistente = await prisma.matricula.findFirst({
         where: {
-          id: parseInt(id),
+          id: notasExistentes?.matriculaId
         },
         include: {
           alunos: {
@@ -127,11 +144,6 @@ export class MatriculaController {
         return res.status(404).send({ error: 'Matricula não encontrada' })
       }
 
-      const notasExistentes = await prisma.nota.findFirst({
-        where: {
-          id: parseInt(id),
-        },
-      })
 
       if (notasExistentes !== null) {
         await prisma.nota
@@ -144,16 +156,16 @@ export class MatriculaController {
               nota2: notas.nota2,
               nota3: notas.nota3,
               nota4: notas.nota4,
+              matriculaId: parseInt(id)
             },
-          })
-          .then(() => {
+          }
+          ).then(() => {
             return res.status(200).send({
               message: 'As notas do aluno foram atualizadas com sucesso',
             })
           })
       }
-
-      if (!notasExistentes) {
+      else {
         await prisma.nota
           .create({
             data: {
@@ -161,25 +173,48 @@ export class MatriculaController {
               nota2: notas.nota2,
               nota3: notas.nota3,
               nota4: notas.nota4,
-              matricula: {
-                connect: {
-                  id: Number(id),
-                },
-              },
-              disciplina: {
-                connect: {
-                  id: disciplina,
-                }
-              }
-            },
-          })
+              matriculaId: parseInt(id),
+              disciplinaId: disciplina
+            }
+          }
+          )
           .then(() => {
             return res.status(200).send({
-              message: 'As notas do aluno foram lançadas no sistema',
+              message: 'As notas do aluno foram lançadas com sucesso',
             })
           })
+
       }
-    } catch (e) {
+
+
+      // if (!notasExistentes) {
+      //   await prisma.nota
+      //     .create({
+      //       data: {
+      //         nota1: notas.nota1,
+      //         nota2: notas.nota2,
+      //         nota3: notas.nota3,
+      //         nota4: notas.nota4,
+      //         matricula: {
+      //           connect: {
+      //             id: matriculaExistente.id
+      //           },
+      //         },
+      //         disciplina: {
+      //           connect: {
+      //             id: (disciplina),
+      //           }
+      //         }
+      //       },
+      //     })
+      //     .then(() => {
+      //       return res.status(200).send({
+      //         message: 'As notas do aluno foram lançadas no sistema',
+      //       })
+      //     }).catch(err => err.message)
+      // }
+    }
+    catch (e) {
       return res.status(500).send({ message: e })
     }
   }
@@ -197,16 +232,16 @@ export class MatriculaController {
             {
               numeroMatricula: {
                 contains: numeroMatricula,
+                mode: 'insensitive'
               },
             },
             {
               alunos: {
-                every: {
-                  pessoaFisica: {
-                    nome: {
-                      contains: nomeAluno,
-                    },
-                  },
+                pessoaFisica: {
+                  nome: {
+                    contains: nomeAluno,
+                    mode: 'insensitive'
+                  }
                 }
               },
             },
@@ -255,14 +290,23 @@ export class MatriculaController {
   async lancarPendencia(req: FastifyRequest, res: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
-      const { pendencia } = req.body as { pendencia: string }
+      const { pendencia, disciplinaId } = req.body as { pendencia: string, disciplinaId: number }
 
       const matricula = await prisma.matricula.findUnique({
         where: {
           id: parseInt(id)
         },
         include: {
-          pendencia: true,
+          pendencias: true,
+          turma: {
+            select: {
+              disciplinas: {
+                select: {
+                  id: true
+                }
+              }
+            }
+          }
         }
       })
 
@@ -272,20 +316,79 @@ export class MatriculaController {
 
       await prisma.matricula.update({
         data: {
-          pendencia: {
-            create: {
-              descricao: pendencia
+          pendencias: {
+            connectOrCreate: {
+              create: {
+                descricao: pendencia,
+                disciplinaId,
+                matriculaId: matricula.id
+              },
+              where: {
+                id: matricula.id
+              }
             }
           }
         },
         where: {
-          id: parseInt(id)
+          id: matricula.id
         }
-      })
+      }).then(() => res.status(201).send({ message: 'Pendência registrada com sucesso!' }))
 
     } catch (error: any) {
       return res.status(500).send({ error: error.message })
     }
   }
+
+  async alterar(req: FastifyRequest, res: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string }
+      const { matricula } = req.body as { matricula: Matricula }
+
+      // Verifica se a turma associada à matrícula existe e se há capacidade disponível
+      const turmaExistente = await prisma.turma.findFirst({
+        where: {
+          id: matricula.turmaId,
+        },
+      })
+
+      const matriculaExistente = await prisma.matricula.findUnique({
+        where: {
+          id: parseInt(id)
+        },
+      })
+
+      if (!matriculaExistente) {
+        return res.status(404).send({ message: 'Matrícula não encontrada' })
+      }
+
+      if (!turmaExistente || turmaExistente.capacidade <= 0) {
+        return res.status(500).send({ message: 'Não há vagas para esta turma' })
+      }
+
+      // Atualiza os dados da matrícula
+      await prisma.matricula.update({
+        where: { id: parseInt(id) },
+        data: {
+          dataMatricula: matriculaExistente.dataMatricula,
+          status: matricula.status,
+          turma: {
+            connect: { id: matricula.turmaId },
+          },
+        },
+      })
+
+      // Atualiza a capacidade da turma
+      await prisma.turma.update({
+        where: { id: turmaExistente.id },
+        data: { capacidade: turmaExistente.capacidade - 1 },
+      })
+
+      return res.status(201).send({ message: 'Matrícula finalizada com sucesso!' })
+    } catch (error: any) {
+      console.log(error.message)
+      return res.status(500).send({ error: error.message })
+    }
+  }
+
 }
 

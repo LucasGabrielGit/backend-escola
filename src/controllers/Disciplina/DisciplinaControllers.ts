@@ -14,7 +14,7 @@ export class DisciplinaController {
       }
       await prisma.disciplina
         .delete({
-          where: { id: parseInt(id) },
+          where: { id: parseInt(id) }
         })
         .then(() => {
           return res.send({ message: 'Disciplina deletada com sucesso!' })
@@ -98,7 +98,7 @@ export class DisciplinaController {
       await prisma.disciplina
         .findUnique({
           where: {
-            id: parseInt(id),
+            id: parseInt(id)
           },
         })
         .then(async (response) => {

@@ -3,85 +3,90 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model PessoaFisica {
-  id             Int         @id @unique @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   nome           String
   dataNascimento DateTime
   genero         String
-  email          String
+  email          String      @unique
   endereco       String
   numTelefone    String
   cpf            String      @unique
   rg             String      @unique
   nacionalidade  String
-  observacoes    String
+  observacoes    String?
   aluno          Aluno[]
-  arofessor      Professor[]
+  professor      Professor[]
 }
 
 model Aluno {
-  id             Int          @id @unique @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   pessoaFisicaId Int
   usuario        String       @unique
   senha          String
   pessoaFisica   PessoaFisica @relation(fields: [pessoaFisicaId], references: [id])
-  matriculas     Matricula[]
-  pendencias     Pendencia[]
+  matricula      Matricula[]
 }
 
 model Professor {
-  id                 Int          @id @unique @default(autoincrement())
+  id                 Int          @id @default(autoincrement())
   pessoaFisicaId     Int
   disciplinaId       Int
   titulacao          String
   areaEspecializacao String
-  observacoes        String
-  disciplina         Disciplina   @relation(fields: [disciplinaId], references: [id])
+  disciplinas        Disciplina[]
   pessoaFisica       PessoaFisica @relation(fields: [pessoaFisicaId], references: [id])
+  turmas             Turma[]
+  turmaId            Int
 }
 
 model Turma {
-  id          Int         @id @unique @default(autoincrement())
+  id          Int          @id @unique @default(autoincrement())
   ano         String
   periodo     String
   capacidade  Int
   turno       String
-  observacoes String
   matriculas  Matricula[]
+  disciplinas Disciplina[]
+  professores Professor[]
 }
 
 model Matricula {
-  id              Int      @id @unique @default(autoincrement())
-  numeroMatricula String   @unique
+  id              Int         @id @default(autoincrement())
   alunoId         Int
   turmaId         Int
+  numeroMatricula String      @unique
   dataMatricula   DateTime
   status          Int
-  observacoes     String
-  turma           Turma    @relation(fields: [turmaId], references: [id])
-  aluno           Aluno    @relation(fields: [alunoId], references: [id])
+  turma           Turma       @relation(fields: [turmaId], references: [id])
+  alunos          Aluno       @relation(fields: [alunoId], references: [id])
   notas           Nota[]
+  pendencias      Pendencia[]
 }
 
 model Pendencia {
-  id        Int    @id @unique @default(autoincrement())
-  descricao String
-  alunoId   Int
-  aluno     Aluno  @relation(fields: [alunoId], references: [id])
+  id           Int         @id @default(autoincrement())
+  descricao    String
+  disciplina   Disciplina  @relation(fields: [disciplinaId], references: [id])
+  matricula    Matricula[]
+  matriculaId  Int
+  disciplinaId Int
 }
 
 model Nota {
-  id          Int       @id @unique @default(autoincrement())
-  matriculaId Int
-  nota1       Decimal
-  nota2       Decimal
-  nota3       Decimal
-  nota4       Decimal
-  matricula   Matricula @relation(fields: [matriculaId], references: [id])
+  id           Int        @id @unique @default(autoincrement())
+  matriculaId  Int
+  nota1        Decimal
+  nota2        Decimal
+  nota3        Decimal
+  nota4        Decimal
+  matricula    Matricula  @relation(fields: [matriculaId], references: [id])
+  disciplina   Disciplina @relation(fields: [disciplinaId], references: [id])
+  disciplinaId Int
 }
 
 model Disciplina {
@@ -90,6 +95,8 @@ model Disciplina {
   descricao    String
   cargaHoraria String
   nivel        String
-  observacoes  String
   professor    Professor[]
+  turma        Turma[]
+  nota         Nota[]
+  pendencia    Pendencia[]
 }

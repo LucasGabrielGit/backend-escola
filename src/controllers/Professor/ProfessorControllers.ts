@@ -29,9 +29,18 @@ export class ProfessorController {
           areaEspecializacao: professor.areaEspecializacao,
           titulacao: professor.titulacao,
           pessoaFisica: { connect: { id: pessoaFisicaExistente.id } },
-          disciplinas: { connect: { id: professor.disciplinaId } },
-          turma: { connect: { id: professor.turmaId } },
-          disciplinaId: professor.disciplinaId
+          disciplinas: {
+            connect: {
+              id: Number(professor.disciplinaId)
+            }
+          },
+          turmas: {
+            connect: {
+              id: Number(professor.turmaId)
+            }
+          },
+          disciplinaId: professor.disciplinaId,
+          turmaId: professor.turmaId
         },
       }).then(() => {
         return res.status(201).send({

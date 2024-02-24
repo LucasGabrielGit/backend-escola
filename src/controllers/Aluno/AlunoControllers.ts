@@ -95,7 +95,7 @@ export class AlunoControllers {
 
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
-          id: parseInt(id),
+          id: parseInt(id)
         },
         include: {
           pessoaFisica: true,
@@ -112,7 +112,7 @@ export class AlunoControllers {
             pessoaFisica: { update: alunoDTO },
           },
           where: {
-            id: parseInt(id),
+            id: parseInt(id)
           },
         })
         .then(async () => {
@@ -134,7 +134,7 @@ export class AlunoControllers {
 
       const alunoExistente = await prisma.aluno.findUnique({
         where: {
-          id: parseInt(id),
+          id: parseInt(id)
         },
         include: {
           matricula: true,
@@ -171,14 +171,14 @@ export class AlunoControllers {
 
       await prisma.aluno.update({
         where: {
-          id: parseInt(id),
+          id: parseInt(id)
         },
         data: {
           matricula: {
             update: {
               where: {
                 alunos: {
-                  every: { id: parseInt(id) }
+                  id: parseInt(id)
                 },
                 numeroMatricula: alunoExistente.matricula[0].numeroMatricula,
               },

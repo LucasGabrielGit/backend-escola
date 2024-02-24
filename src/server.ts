@@ -59,6 +59,10 @@ app.post(
   '/matricula/lancar-pendencia/:id',
   new MatriculaController().lancarPendencia
 )
+app.put(
+  '/matricula/alterar/:id',
+  new MatriculaController().alterar
+)
 app.get(
   '/matricula/detalhe/:id',
   new MatriculaController().buscarMatriculaPorId
